@@ -1,0 +1,94 @@
+﻿@{ ViewData["Title"] = "Upload"; }
+
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.2.0/css/datepicker.min.css" rel="stylesheet">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.2.0/js/bootstrap-datepicker.min.js"></script>
+
+<link href="~/css/upload.css" rel="stylesheet" />
+<div class="text-right">
+    <button id="info" class="btn shadow text-white" style="background-color: #0084BD"> تعليمات</button>
+    <p id="steps"></p>
+</div>
+<div class="container jumbotron shadow" style="border-radius: 20px;">
+    <form name="upload" method="post" asp-controller="Upload" asp-action="UploadExcel" enctype="multipart/form-data">
+
+        <div style="float: right; text-align: right; border: 3px solid #dee2e6; border-radius: 15px; padding: 15px 10px 35px 20px;">
+
+            <p>اختر المؤشر</p>
+            <select class="form-control form-control-sm " id="kpi" name="kpi">
+                <option value="null" disabled selected>المؤشرات</option>
+                <option value="survey">مؤشرات الاستبانات</option>
+                <option value="publication">مؤشرات البحوث</option>
+            </select>
+        </div>
+
+
+
+        <!--Drag and Drop code-->
+        <div class="container ">
+
+            <div class="row justify-content-center">
+                <div class="col-md-6 text-right ">
+
+                    <div class="form-group files color">
+                        <label>حمل الملف</label>
+                        <input type="file" onchange="filterSelected()" name="file" id="fileuploadExcel" class="form-control" accept=".xlsx" />
+
+                    </div>
+
+
+                </div>
+
+            </div>
+            <div style="position:relative; left:34%">
+                <input type="submit" id="sure" class="btn shadow text-white" style="background-color: #0084BD; width: 15%;" value="رفع الملف" disabled>
+            </div>
+
+        </div>
+
+        <div class="text-center">
+            <p class="text-danger" id="msgerr"> @ViewBag.err</p>
+            <p class="text-success" id="msgsuc"> @ViewBag.suc</p>
+        </div>
+    </form>
+
+ 
+
+
+</div>
+
+<!--for the year input-->
+
+<script>
+   
+    $(document).ready(function () {
+        $("#info").click(function () {
+            $("#steps").html("<small> هذه الشاشة تسمح لك برفع ملفات الإكسل لإدخال البيانات الخاصة بمؤشرات الأداء الى النظام<br> قم باختيار نوع المعيار، بعدها قم بتحميل الملف ثم اضغط زر 'رفع الملف' لحفظ البيانات</small>").fadeToggle();
+        })
+    });
+    $(document).ready(function () {
+        setTimeout(function () {
+            $("#msgerr").fadeOut();
+        }, 2500);
+    });
+
+    $(document).ready(function () {
+        setTimeout(function () {
+            $("#msgsuc").fadeOut();
+        }, 2500);
+    });
+
+    function filterSelected() {
+        var file = document.getElementById("fileuploadExcel").value;
+        var KPICode = $('#kpi :selected').val();
+       
+
+        if (KPICode != "null" && file != "") {
+            document.getElementById("sure").disabled = false;
+        }
+
+    }
+
+
+</script>

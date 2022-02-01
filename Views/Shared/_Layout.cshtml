@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - KPI</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link href="~/favicon.ico" rel="icon" type="image/x-icon"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <!-- reference for gradient color: https://www.w3schools.com/css/css3_gradients.asp -->
+    <header style="background-color: #ededed ">
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light border-bottom box-shadow mb-3">
+
+            <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index"><img src="~/pics/Logo.jpeg" height="60" width="120"></a>
+            <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">مؤشر الأداء البرامجي الرئيسي</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+
+                <ul class="navbar-nav flex-grow-0"></ul>
+                <ul class="navbar-nav flex-grow-0"></ul>
+                <ul class="navbar-nav flex-grow-0"></ul>
+                <ul class="navbar-nav flex-grow-0"></ul>
+
+
+                <ul class="navbar-nav flex-grow-1">
+                    <li class="nav-item">
+                        <a class=" nav-link" asp-area="" asp-controller="Home" asp-action="Index - Copy">التقارير</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class=" nav-link" asp-area="" asp-controller="Upload" asp-action="Index">التحميل</a>
+                    </li>
+                </ul>
+
+                <button class="btn shadow text-white" style="background-color: #0084BD" type="submit">تسجيل الخروج</button>
+
+            </div>
+
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top text-muted text-right" style="clear: both; position: relative; height: 3%; background-color: #ededed ">
+        <div class="container" >
+            &copy; 2021 - جامعة الملك سعود
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

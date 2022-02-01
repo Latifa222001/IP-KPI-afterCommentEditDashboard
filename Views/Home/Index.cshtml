@@ -1,0 +1,957 @@
+﻿@{ ViewData["Title"] = "Dashboard"; }
+
+@model IP_KPI.Models.College;
+
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.2.0/css/datepicker.min.css" rel="stylesheet">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.2.0/js/bootstrap-datepicker.min.js"></script>
+
+<style>
+    .required:after {
+        content: " *";
+        color: red;
+    }
+
+    .chart-container {
+        position: relative;
+        margin: 2%;
+        height: 35vh;
+        width: 25vw;
+        display: flex;
+        border-radius: 20px;
+        border: 3px solid #dee2e6;
+        background-color: #f0f0f0;
+    }
+
+    .cont {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+    }
+    /* The flip card container - set the width and height to whatever you want. We have added the border property to demonstrate that the flip itself goes out of the box on hover (remove perspective if you don't want the 3D effect */
+    .flip-card {
+        background-color: transparent;
+        width: 300px;
+        height: 115px;
+        perspective: 1000px; /* Remove this if you don't want the 3D effect */
+        align-items: center;
+        text-align: center;
+        margin: 1%;
+    }
+
+    /* This container is needed to position the front and back side */
+    .flip-card-inner {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.8s;
+        transform-style: preserve-3d;
+    }
+
+    /* Do an horizontal flip when you move the mouse over the flip box container */
+    .flip-card:hover .flip-card-inner {
+        transform: rotateY(180deg);
+    }
+
+    /* Position the front and back side */
+    .flip-card-front, .flip-card-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        -webkit-backface-visibility: hidden; /* Safari */
+        backface-visibility: hidden;
+        background-color: white;
+        border-radius: 15px;
+    }
+
+
+    /* Style the back side */
+    .flip-card-back {
+        color: white;
+        transform: rotateY(180deg);
+    }
+</style>
+<div id="filter" class="container" style="border-radius: 20px; position: relative; right: 0%;">
+    <form style="float: right; text-align: right; border: 3px solid #dee2e6; border-radius: 15px; padding: 15px 10px 15px 20px; background-color: #f0f0f0; ">
+        <p>اعرض الرسوم البيانية على حسب:</p>
+        <!-- Fillter code-->
+        <!-- KPI Option -->
+
+        <label class="small required">اختر المؤشر:</label>
+        <select onchange="enable()" name="KPI" id="KPI" class="form-control form-control-sm">
+            <option value="null" selected disabled>اختر</option>
+            @foreach (Kpi x in ViewBag.KPI)
+            {
+<option value="@x.Kpicode">@x.Kpicode</option>            }
+        </select>
+
+        <!-- College Option -->
+        <label class="small required">اختر الكلية:</label>
+        <select disabled id="college" name="college" onchange="ChangeDepartments(); filterSelected();" class="form-control form-control-sm">
+            <option value="null" selected disabled>اختر</option>
+            @foreach (College x in ViewBag.Colleges)
+            {
+<option value="@x.CollegeId">@x.CollageName</option>}
+        </select>
+
+        <!-- Department Option -->
+        <label class="small required">اختر القسم:</label>
+        <select disabled id="department" onchange="ChangePrograms(); filterSelected();" name="department" class="form-control form-control-sm">
+            <option value="null" selected>اختر</option>
+        </select>
+
+        <!-- Program Option -->
+        <label class="small required">اختر البرنامج:</label>
+        <select disabled name="program" id="program" onchange="filterSelected()" class="form-control form-control-sm">
+            <option value="null" selected>اختر</option>
+        </select>
+
+        <!-- Year Option -->
+        <label class="small required">اختر السنة:</label>
+        <input disabled onchange="filterSelected()" class="form-control form-control-sm" type="text" name="datepicker" placeholder="اختر" id="datepicker" />
+        <script>
+            var year1 = "";
+            $("#datepicker").datepicker({
+                format: "yyyy",
+                viewMode: "years",
+                minViewMode: "years",
+                autoclose: true //to close picker once year is selected
+            });
+            //to assign the picker value
+            $("#datepicker").on("change", function () {
+                var selected = $(this).val();
+                year1 = selected;
+            });
+        </script>
+        <p id="KPIResult"></p>
+        <!-- Term Option -->
+        <label class="small required">اختر الفصل الدراسي:</label>
+        <select disabled onchange="filterSelected()" class="form-control form-control-sm" id="term" name="term">
+            <option value="null" selected disabled>اختر</option>
+            <option value="0">الكل</option>
+            <option value="الفصل الدراسي الاول">الفصل الاول</option>
+            <option value="الفصل الدراسي الثاني">الفصل الثاني</option>
+            <option value="الفصل الدراسي الثالث">الفصل الثالث</option>
+            <option value="الفصل الدراسي الصيفي">الفصل الصيفي</option>
+        </select>
+
+        <!-- Gender Option -->
+        <label class="small">اختر الجنس:</label>
+        <select disabled name="Gender" id="Gender" class="form-control form-control-sm">
+            <option value="0" selected>الكل</option>
+            <option value="انثى">انثى</option>
+            <option value="ذكر">ذكر</option>
+        </select>
+
+        <!-- Nationality Option -->
+        <label class="small">اختر الجنسية:</label>
+        <select disabled name="nationality" id="nationality" class="form-control form-control-sm">
+            <option value="0" selected>الكل</option>
+            <option value="سعودي">سعودي</option>
+            <option value="غير سعودي">غير سعودي</option>
+        </select>
+
+        <!-- Case Option -->
+        <label class="small">اختر الحالة:</label>
+        <select disabled name="case" id="case" class="form-control form-control-sm">
+            <option value="0" selected>الكل</option>
+            <option value="طبيعي">طبيعي</option>
+            <option value="احتياجات خاصة">احتياجات خاصة</option>
+        </select>
+
+        <!-- buttons -->
+        <br />
+        <button class="btn btn-block text-white btn-sm shadow" style="background-color: #0084BD" disabled onclick="ShowGraphs()" id="show" data-toggle="button" aria-pressed="false">عرض التقارير</button>
+        <br />
+
+        <button class="btn btn-block text-white btn-sm" style="background-color: #0084BD" data-toggle="button" aria-pressed="false" disabled>مشاركة</button>
+    </form>
+
+    <div class="container" id="toAppendWith">
+        <div class="cont row">
+
+            <div class="flip-card " id="flip-cardA" style="margin-right: 5%">
+
+            </div>
+
+            <div class="flip-card" id="cardB">
+                    
+            </div>
+
+            <div class="flip-card" id="cardC">
+
+            </div>
+
+            <div class="flip-card" id="cardD">
+                  
+            </div>
+        </div>
+        <br/>
+        <div id='cards'>
+
+        </div>
+
+    </div>
+</div>
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+
+    //to enable the filter option based on the choosen KPI
+    function enable() {
+        var KPICode = $('#KPI :selected').val();
+        var college = document.getElementById("college");
+        var department = document.getElementById("department");
+        var program = document.getElementById("program");
+        var gender = document.getElementById("Gender")
+        var nationality = document.getElementById("nationality");
+        var studentCase = document.getElementById("case");
+        var term = document.getElementById("term");
+        var year = document.getElementById("datepicker");
+
+        if (KPICode == "KPI-P-02" || KPICode == "KPI-P-03") {
+            college.disabled = false;
+            department.disabled = false;
+            program.disabled = false;
+            gender.disabled = false;
+            nationality.disabled = false;
+            studentCase.disabled = false;
+            term.disabled = false;
+            year.disabled = false;
+        }
+        if (KPICode == "KPI-P-14" || KPICode == "KPI-P-15" || KPICode == "KPI-P-16") {
+            college.disabled = false;
+            department.disabled = false;
+            program.disabled = false;
+            gender.disabled = false;
+            nationality.disabled = true;
+            studentCase.disabled = true;
+            term.disabled = false;
+            year.disabled = false;
+        }
+    }
+
+    function filterSelected() {
+        var KPICode = $('#KPI :selected').val();
+        var college = $('#college :selected').val();
+        var department = $('#department :selected').val();
+        var program = $('#program :selected').val();
+        var term = $('#term :selected').val();
+        var year = year1.toString();
+
+        if (KPICode != "null" && college != "null" && department != "null" && program != "null" && term != "null" && year != "") {
+            document.getElementById("show").disabled = false;
+            console.log("enterd");
+        }
+
+    }
+
+
+
+
+
+    function ChangeDepartments() {
+        var college = $('#college :selected').val();
+        $.ajax({
+            type: "GET",
+            url: "/Home/GetDepartments",
+            data: { collegeId: college },
+            dataType: "json",
+            contentType: 'application/json; charset=utf-8',
+            success: function (data) {
+                $('#department')
+                    .find('option')
+                    .remove()
+                    .end()
+                    .append('<option value="null" selected>اختر</option>')
+                    .val('');
+                for (var i = 0; i < data.length; i++) {
+                    $("#department").append('<option value= "' + data[i].departmentId + '">' + data[i].departmentName + '</option>');
+                }
+            },
+            error: function () {
+                alert("حدث خطأ ما")
+            }
+        });
+    }
+    function ChangePrograms() {
+        var departmentId = $('#department :selected').val();
+        $.ajax({
+            type: "GET",
+            url: "/Home/GetPrograms",
+            data: { departmentId: departmentId },
+            dataType: "json",
+            contentType: 'application/json; charset=utf-8',
+            success: function (data) {
+                $('#program')
+                    .find('option')
+                    .remove()
+                    .end()
+                    .append('<option value="null" selected>اختر</option>')
+                    .val('');
+                for (var i = 0; i < data.length; i++) {
+                    $("#program").append('<option value= "' + data[i].programId + '">' + data[i].level + " " + data[i].programName + '</option>');
+                }
+            },
+            error: function () {
+                alert("حدث خطأ ما")
+            }
+        });
+    }
+/*
+    function showcards() {
+        var KPIID = $('#KPI :selected').val();
+        if (KPIID == "KPI-P-02" || KPIID == "KPI-P-03") {
+            $('#cards').remove();
+            $('#toAppendWith').append("<div id='cards'><div class='row'><div class='chart-container-main col-md-12'><canvas id='target'></canvas></div></div><div class='row'><div class= 'chart-container col-md-12'><div class='col-md-6'><canvas id='caseGraph'></canvas></div><div class='col-md-6'><canvas id='nationalityGraph'></canvas></div></div ></div ><div class='row'><div id='hideIf14' class='chart-container col-md-12'><div class='col-md-6'> <canvas id='genderGraph'></canvas> </div><div class='col-md-6'>  <canvas id='termGraph'></canvas></div></div></div></div>");
+        }
+        if (KPIID == "KPI-P-14" || KPIID == "KPI-P-15" || KPIID == "KPI-P-16") {
+            $('#cards').remove();
+            $('#toAppendWith').append("<div id='cards'><div class='row'><div class='chart-container-main col-md-12'><canvas id='target'></canvas></div></div><div class='row'><div class= 'chart-container col-md-12'><div class='col-md-6'><canvas id='caseGraph'></canvas></div><div class='col-md-6'><canvas id='nationalityGraph'></canvas></div></div ></div></div>");
+        }
+    }
+    */
+    function ShowGraphs() {
+        var programId = $('#program :selected').val();
+        var KPICode = $('#KPI :selected').val();
+        var gender = $('#Gender :selected').val();
+        var term = $('#term :selected').val();
+        var year = year1.toString();
+        var studentCase = $('#case :selected').val();
+        var nationality = $('#nationality :selected').val();
+
+        if (KPICode == "KPI-P-02" || KPICode == "KPI-P-03") {
+            $('#cards').remove();
+            $('#toAppendWith').append("<div id='cards'><div class='row'><div class= 'chart-container col-md-12'><div class='col-md-6'><canvas id='caseGraph'></canvas></div><div class='col-md-6'><canvas id='nationalityGraph'></canvas></div></div ></div ><br/><div class='row'><div id='hideIf14' class='chart-container col-md-12'><div class='col-md-6'> <canvas id='genderGraph'></canvas> </div><div class='col-md-6'>  <canvas id='termGraph'></canvas></div></div></div></div>");
+        }
+        if (KPICode == "KPI-P-14" || KPICode == "KPI-P-15" || KPICode == "KPI-P-16") {
+            $('#cards').remove();
+            $('#toAppendWith').append("<div id='cards'><div class='row'><div class= 'chart-container col-md-12'><div class='col-md-6'><canvas id='caseGraph'></canvas></div><div class='col-md-6'><canvas id='nationalityGraph'></canvas></div></div ></div></div>");
+        }
+        //target
+        if (KPICode == "KPI-P-02" || KPICode == "KPI-P-03") {
+            $.ajax({
+                type: "Get",
+                url: "/Home/GetBarGenderChartDictionary",
+                data: { programId: programId, KPICode: KPICode, gender: gender, term: term, year: year, studentCase: studentCase, nationality: nationality },
+                dataType: "json",
+                contentType: 'application/json; charset=utf-8',
+                success: function (data) {
+                    var barColor = []; var barGender = []; var barScore = []; var progName = []; var numOfStudent = [];
+                    for (var i = 0; i < data.length; i++) {
+                        barGender.push(data[i].gender);
+                        barColor.push(data[i].nationality);
+                        barScore.push(data[i].term);
+                        progName.push(data[i].studentCase);
+                        numOfStudent.push(data[i].programId);
+                    }
+                    var ctx = document.getElementById("genderGraph"); //where
+                    var myChart = new Chart(ctx /* location */, { /* chart */
+                        type: 'bar',
+                        options: {
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    min: 1,
+                                    max: 5,
+                                    stacked: true,
+                                    grid: {
+                                        display: true
+
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false
+                                    }
+                                }
+                            },
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'نسبة رضا الطلاب من حيث الجنس'
+                                },
+                                tooltip: {
+                                    yAlign: 'bottom',
+                                    backgroundColor: '#636363',
+                                    titleMarginBottom: 0,
+                                    titleFont: {
+                                        weight: 'bold',
+                                        size: 16
+                                    },
+                                    titleSpacing: 0,
+                                    titleAlign: 'center',
+                                    bodyAlign: 'center',
+                                    footerAlign: 'right',
+                                    callbacks: {
+                                        afterBody: function (context) {
+                                            return '_______________________________';
+                                        },
+                                        beforeFooter: function(context){
+                                            return ` اعداد المجيبين: ${numOfStudent[context[0].dataIndex]} `;
+                                        },
+                                        footer: function (context) {
+                                            return ` متوسط نتائج المجيبين على الاستبانة: ${barScore[context[0].dataIndex]} `;
+                                        },
+                                        label: function (context) {
+                                            return '';
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        data: {
+                            labels: barGender, //x-axis, and it can be ['','']
+                            datasets: [
+                                {
+                                    data: barScore, //y-axis
+                                    label: progName[0], //the upper chart filter
+                                    backgroundColor: barColor,
+                                   // borderColor: "rgb(0,204,204)",
+                                    borderWidth: 2,
+                                    hoverBackgroundColor: "rgba(0,204,204,0.4)",
+                                    hoverBorderColor: "rgba(0,204,204,1)",
+                                    fill: false
+                                }
+                            ]
+                        }
+                    });
+                },
+                error: function () {
+                    alert("حدث خطأ في الرسمة البيانية للجنس")
+                }
+            });
+
+            $.ajax({
+                type: "Get",
+                url: "/Home/GetBarNationalityChartDictionary",
+                data: { programId: programId, KPICode: KPICode, gender: gender, term: term, year: year, studentCase: studentCase, nationality: nationality },
+                dataType: "json",
+                contentType: 'application/json; charset=utf-8',
+                success: function (data) {
+                    var barColor = []; var barGender = []; var barScore = []; var progName = []; var numOfStudent = [];
+                    for (var i = 0; i < data.length; i++) {
+                        barGender.push(data[i].gender);
+                        barColor.push(data[i].nationality);
+                        barScore.push(data[i].term);
+                        progName.push(data[i].studentCase);
+                        numOfStudent.push(data[i].programId);
+                    }
+                    var ctx = document.getElementById("nationalityGraph"); //where
+                    var myChart = new Chart(ctx /* location */, { /* chart */
+                        type: 'bar',
+                        options: {
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    min: 1,
+                                    max: 5,
+                                    stacked: true,
+                                    grid: {
+                                        display: true
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false
+                                    }
+                                }
+                            },
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'نسبة رضا الطلاب من حيث الجنسية'
+                                },
+                                tooltip: {
+                                    yAlign: 'bottom',
+                                    backgroundColor: '#636363',
+                                    titleMarginBottom: 0,
+                                    titleFont: {
+                                        weight: 'bold',
+                                        size: 16
+                                    },
+                                    titleSpacing: 0,
+                                    titleAlign: 'center',
+                                    bodyAlign: 'center',
+                                    footerAlign: 'right',
+                                    callbacks: {
+                                        afterBody: function (context) {
+                                            return '_______________________________';
+                                        },
+                                        beforeFooter: function (context) {
+                                            return ` اعداد المجيبين: ${numOfStudent[context[0].dataIndex]} `;
+                                        },
+                                        footer: function (context) {
+                                            return ` متوسط نتائج المجيبين على الاستبانة: ${barScore[context[0].dataIndex]} `;
+                                        },
+                                        label: function (context) {
+                                            return '';
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        data: {
+                            labels: barGender, //x-axis, and it can be ['','']
+                            datasets: [
+                                {
+                                    data: barScore, //y-axis
+                                    label: progName[0], //the upper chart filter
+                                    backgroundColor: barColor,
+                                    //borderColor: "rgb(0,204,204)",
+                                    borderWidth: 2,
+                                    hoverBackgroundColor: "rgba(0,204,204,0.4)",
+                                    hoverBorderColor: "rgba(0,204,204,1)",
+                                    fill: false
+                                }
+                            ]
+                        }
+                    });
+                },
+                error: function () {
+                    alert("حدث خطأ في الرسمة البيانية للجنسية")
+                }
+            });
+
+            $.ajax({
+                type: "Get",
+                url: "/Home/GetBarTermChartDictionary",
+                data: { programId: programId, KPICode: KPICode, gender: gender, term: term, year: year, studentCase: studentCase, nationality: nationality },
+                dataType: "json",
+                contentType: 'application/json; charset=utf-8',
+                success: function (data) {
+                    var barColor = []; var barGender = []; var barScore = []; var progName = []; var numOfStudent = [];
+                    for (var i = 0; i < data.length; i++) {
+                        barGender.push(data[i].gender);
+                        barColor.push(data[i].nationality);
+                        barScore.push(data[i].term);
+                        progName.push(data[i].studentCase);
+                        numOfStudent.push(data[i].programId);
+                    }
+                    var ctx = document.getElementById("termGraph"); //where
+                    var myChart = new Chart(ctx /* location */, { /* chart */
+                        type: 'bar',
+                        options: {
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    min: 1.0,
+                                    max: 5.0,
+                                    stacked: true,
+                                    grid: {
+                                        display: true
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false
+                                    },
+                                }
+                            },
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'نسبة رضا الطلاب من حيث الفصول'
+                                },
+                                tooltip: {
+                                    yAlign: 'bottom',
+                                    backgroundColor: '#636363',
+                                    titleMarginBottom: 0,
+                                    titleFont: {
+                                        weight: 'bold',
+                                        size: 16
+                                    },
+                                    titleSpacing: 0,
+                                    titleAlign: 'center',
+                                    bodyAlign: 'center',
+                                    footerAlign: 'right',
+                                    callbacks: {
+                                        afterBody: function (context) {
+                                            return '_______________________________';
+                                        },
+                                        beforeFooter: function (context) {
+                                            return ` اعداد المجيبين: ${numOfStudent[context[0].dataIndex]} `;
+                                        },
+                                        footer: function (context) {
+                                            return ` متوسط نتائج المجيبين على الاستبانة: ${barScore[context[0].dataIndex]} `;
+                                        },
+                                        label: function (context) {
+                                            return '';
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        data: {
+                            labels: barGender, //x-axis, and it can be ['','']
+                            datasets: [
+                                {
+                                    data: barScore, //y-axis
+                                    label: progName[0], //the upper chart filter
+                                    backgroundColor: barColor,
+                                   // borderColor: "rgb(0,204,204)",
+                                    borderWidth: 2,
+                                   hoverBackgroundColor: "rgba(0,204,204,0.4)",
+                                 hoverBorderColor: "rgba(0,204,204,1)",
+                                    fill: false
+                                }
+                            ]
+                        }
+                    });
+                },
+                error: function () {
+                    alert("حدث خطأ في الرسمة البيانية للفصل الدراسي")
+                }
+            });
+
+            $.ajax({
+                type: "Get",
+                url: "/Home/GetBarStudentCaseChartDictionary",
+                data: { programId: programId, KPICode: KPICode, gender: gender, term: term, year: year, studentCase: studentCase, nationality: nationality },
+                dataType: "json",
+                contentType: 'application/json; charset=utf-8',
+                success: function (data) {
+                    var barColor = []; var barGender = []; var barScore = []; var progName = []; var numOfStudent = [];
+                    for (var i = 0; i < data.length; i++) {
+                        barGender.push(data[i].gender);
+                        barColor.push(data[i].nationality);
+                        barScore.push(data[i].term);
+                        progName.push(data[i].studentCase);
+                        numOfStudent.push(data[i].programId);
+                    }
+                    var ctx = document.getElementById("caseGraph"); //where
+                    var myChart = new Chart(ctx /* location */, { /* chart */
+                        type: 'bar',
+                        options: {
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    min: 1,
+                                    max: 5,
+                                    stacked: true,
+                                    grid: {
+                                        display: true
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false
+                                    }
+                                }
+                            },
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'نسبة رضا الطلاب من حيث الحالة'
+                                },
+                                tooltip: {
+                                    yAlign: 'bottom',
+                                    backgroundColor: '#636363',
+                                    titleMarginBottom: 0,
+                                    titleFont: {
+                                        weight: 'bold',
+                                        size: 16
+                                    },
+                                    titleSpacing: 0,
+                                    titleAlign: 'center',
+                                    bodyAlign: 'center',
+                                    footerAlign: 'right',
+                                    callbacks: {
+                                        afterBody: function (context) {
+                                            return '_______________________________';
+                                        },
+                                        beforeFooter: function (context) {
+                                            return ` اعداد المجيبين: ${numOfStudent[context[0].dataIndex]} `;
+                                        },
+                                        footer: function (context) {
+                                            return ` متوسط نتائج المجيبين على الاستبانة: ${barScore[context[0].dataIndex]} `;
+                                        },
+                                        label: function (context) {
+                                            return '';
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        data: {
+                            labels: barGender, //x-axis, and it can be ['','']
+                            datasets: [
+                                {
+                                    data: barScore, //y-axis
+                                    label: progName[0], //the upper chart filter
+                                    backgroundColor: barColor,
+                                 //   borderColor: "rgb(0,204,204)",
+                                    borderWidth: 2,
+                                    hoverBackgroundColor: "rgba(0,204,204,0.4)",
+                                    hoverBorderColor: "rgba(0,204,204,1)",
+                                    fill: false
+                                }
+                            ]
+                        }
+                    });
+                },
+                error: function () {
+                    alert("حدث خطأ في الرسمة البيانية لحالة الطالب")
+                }
+            });
+
+            $.ajax({
+                type: "Get",
+                url: "/Home/GetSurveyTargetChartDictionary",
+                data: { programId: programId, KPICode: KPICode, gender: gender, term: term, year: year, studentCase: studentCase, nationality: nationality },
+                dataType: "json",
+                contentType: 'application/json; charset=utf-8',
+                success: function (data) {
+                    var barColor = []; var barGender = []; var barScore = []; var progName = []; var numOfStudent = [];
+                    for (var i = 0; i < data.length; i++) {
+                        barGender.push(data[i].gender);
+                        barColor.push(data[i].nationality);
+                        barScore.push(data[i].term);
+                        progName.push(data[i].studentCase);
+                        numOfStudent.push(data[i].programId);
+                    }
+
+                    $("#cardD").append("<div style='border-top: 3px solid #B0AEB3;border-bottom: 3px solid #B0AEB3;border-left: 3px solid #B0AEB3;border-right: 5px dotted #B0AEB3;border-radius: 15px;box-shadow: 20px 20px 30px -15px #B0AEB3;' class='flip-card-front'><br /><h5>القيمة المرجعية الداخلية</h5><h5 style='color: #B0AEB3;'>" + barScore[1] + "</h5></div>");
+                    $("#cardC").append("<div style='border-top: 3px solid #D0DA32;border-bottom: 3px solid #D0DA32;border-left: 3px solid #D0DA32;border-right: 5px dotted #D0DA32;border-radius: 15px; box-shadow: 20px 20px 30px -15px #B0AEB3;' class='flip-card-front'><br /><h5>القيمة المرجعية الخارجية</h5><h5 style='color: #D0DA32;'>" + barScore[2] + "</h5></div>");
+                    $("#cardB").append("<div style='border-top: 3px solid #1F3771;border-bottom: 3px solid #1F3771;border-left: 3px solid #1F3771;border-right: 5px dotted #1F3771;border-radius: 15px; box-shadow: 20px 20px 30px -15px #B0AEB3;' class='flip-card-front'><br /><h5>القيمة المستهدفة</h5><h5 style='color: #1F3771;'>" + barScore[3] + "</h5></div>");
+                    $("#flip-cardA").append("<div style='border-top: 3px solid " + barColor[0] + ";border-bottom: 3px solid" + barColor[0] + ";border-left: 3px solid" + barColor[0] + ";border-right: 5px dotted" + barColor[0] + ";border-radius: 15px; box-shadow: 20px 20px 30px -15px #B0AEB3;' class='flip-card-inner'><div class='flip-card-front'><br /><h5>القيمة الفعلية</h5><h5 style='color:" + barColor[0] + ";'>" + barScore[0] + "</h5></div><div class='flip-card-back'><p id='color-valueBAcual' style='color:#29B8BE; font - size: 13px;'> الاداء فوق القيمة المستهدفة ب %10</p><p id='color-valueBAcual' style='color: #C1272D; font-size: 13px; '> الاداء اقل من القيمة المستهدفة ب %10</p><p id='color-valueBAcual' style='color: #71BA44; font-size: 13px; '> الاداء مساوي للقيمة المستهدفة</p></div></div>");
+                },
+                error: function () {
+                    alert("حدث خطأ في الرسمة البيانية للاهداف")
+                }
+            });
+        }
+
+        if (KPICode == "KPI-P-14" || KPICode == "KPI-P-15" || KPICode == "KPI-P-16") {
+
+            $.ajax({
+                type: "Get",
+                url: "/Home/GetPublicationTargetChartDictionary",
+                data: { programId: programId, KPICode: KPICode, gender: gender, term: term, year: year },
+                dataType: "json",
+                contentType: 'application/json; charset=utf-8',
+                success: function (data) {
+                    var barColor = []; var barGender = []; var barScore = []; var progName = []; var numOfStudent = [];
+                    for (var i = 0; i < data.length; i++) {
+                        barGender.push(data[i].gender);
+                        barColor.push(data[i].nationality);
+                        barScore.push(data[i].term);
+                        progName.push(data[i].studentCase);
+                        numOfStudent.push(data[i].programId);
+                    }
+                    $("#color-valueAcual").append('<h3 style="color:' + barColor[0] + ';">' + barScore[0] + '</h3>');
+                    $("#color-valueExternal").append('<h3 style="color:' + barColor[1] + ';">' + barScore[1] + '</h3>');
+                    $("#color-valueInternal").append('<h3 style="color:' + barColor[2] + ';">' + barScore[2] + '</h3>');
+                    $("#color-valueTarget").append('<h3 style="color:' + barColor[3] + ';">' + barScore[3] + '</h3>');
+                    $("#flip-cardA").append("<div style='border-top: 6px solid" + barColor[0] + "; '></div>");
+                },
+                error: function () {
+                    alert("حدث خطأ في الرسمة البيانية للاهداف")
+                }
+            });
+
+            $.ajax({
+                type: "Get",
+                url: "/Home/GetPiePublicationsChartDictionary",
+                data: { programId: programId, gender: gender, year: year},
+                dataType: "json",
+                contentType: 'application/json; charset=utf-8',
+                success: function (data) {
+                    var barColor = []; var barGender = []; var barScore = []; var progName = []; var numOfStudent = [];
+                    for (var i = 0; i < data.length; i++) {
+                        barGender.push(data[i].gender);
+                        barColor.push(data[i].nationality);
+                        barScore.push(data[i].term);
+                        progName.push(data[i].studentCase);
+                        numOfStudent.push(data[i].programId);
+                    }
+                    console.log(barGender);
+                    console.log(barColor);
+                    console.log(barScore);
+                    console.log(progName);
+                    var ctx = document.getElementById("nationalityGraph"); //where
+                    var myChart = new Chart(ctx /* location */, { /* chart */
+                        type: 'pie',
+                        options: {
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    min: 1,
+                                    max: 5,
+                                    stacked: true,
+                                    grid: {
+                                        display: true
+
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false
+                                    }
+                                }
+                            },
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'اعداد منشورات اعضاء هيئة التدريس من حيث الجنس'
+                                },
+                                tooltip: {
+                                    yAlign: 'bottom',
+                                    backgroundColor: '#636363',
+                                    titleMarginBottom: 0,
+                                    titleFont: {
+                                        weight: 'bold',
+                                        size: 16
+                                    },
+                                    titleSpacing: 0,
+                                    titleAlign: 'center',
+                                    bodyAlign: 'center',
+                                    footerAlign: 'right',
+                                    callbacks: {
+                                        title: function (context) {
+                                            return `${barGender[context[0].dataIndex]} `;
+                                        },
+                                        afterBody: function (context) {
+                                            return '_______________________________';
+                                        },
+                                        beforeFooter: function (context) {
+                                            return ` اعداد الناشرين: ${numOfStudent[context[0].dataIndex]} `;
+                                        },
+                                        footer: function (context) {
+                                            return ` نسبة اعداد المنشورات: ${barScore[context[0].dataIndex]} `;
+                                        },
+                                        label: function (context) {
+                                            return '';
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        data: {
+                            labels: barGender, //x-axis, and it can be ['','']
+                            datasets: [
+                                {
+                                    data: barScore, //y-axis
+                                    label: progName[0], //the upper chart filter
+                                    backgroundColor: barColor,
+                                   // borderColor: "rgb(0,204,204)",
+                                    borderWidth: 2,
+                                    hoverBackgroundColor: "rgba(0,204,204,0.4)",
+                                    hoverBorderColor: "rgba(0,204,204,1)",
+                                    fill: false
+                                }
+                            ]
+                        }
+                    });
+                },
+                error: function () {
+                    alert("حدث خطأ في الرسمة البيانية للجنس")
+                }
+            });
+
+            $.ajax({
+                type: "Get",
+                url: "/Home/GetPieNumOfFacultyChartDictionary",
+                data: { programId: programId, gender: gender, year: year},
+                dataType: "json",
+                contentType: 'application/json; charset=utf-8',
+                success: function (data) {
+                    var barColor = []; var barGender = []; var barScore = []; var progName = []; var numOfStudent = [];
+                    for (var i = 0; i < data.length; i++) {
+                        barGender.push(data[i].gender);
+                        barColor.push(data[i].nationality);
+                        barScore.push(data[i].term);
+                        progName.push(data[i].studentCase);
+                        numOfStudent.push(data[i].programId);
+                    }
+                    console.log(barGender);
+                    console.log(barColor);
+                    console.log(barScore);
+                    console.log(progName);
+                    var ctx = document.getElementById("caseGraph"); //where
+                    var myChart = new Chart(ctx /* location */, { /* chart */
+                        type: 'pie',
+                        options: {
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    min: 1,
+                                    max: 5,
+                                    stacked: true,
+                                    grid: {
+                                        display: true
+
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false
+                                    }
+                                }
+                            },
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'اعداد اعضاء هيئة التدريس الذين نشروا بحث واحد على الاقل'
+                                },
+                                tooltip: {
+                                    yAlign: 'bottom',
+                                    backgroundColor: '#636363',
+                                    titleMarginBottom: 0,
+                                    titleFont: {
+                                        weight: 'bold',
+                                        size: 16
+                                    },
+                                    titleSpacing: 0,
+                                    titleAlign: 'center',
+                                    bodyAlign: 'center',
+                                    footerAlign: 'right',
+                                    callbacks: {
+                                        title: function (context) {
+                                            return `${barGender[context[0].dataIndex]} `;
+                                        },
+                                        afterBody: function (context) {
+                                            return '_______________________________';
+                                        },
+                                        beforeFooter: function (context) {
+                                            return ` اعداد الناشرين: ${numOfStudent[context[0].dataIndex]} `;
+                                        },
+                                        footer: function (context) {
+                                            return ` نسبة النشر: ${barScore[context[0].dataIndex]} `;
+                                        },
+                                        label: function (context) {
+                                            return '';
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        data: {
+                            labels: barGender, //x-axis, and it can be ['','']
+                            datasets: [
+                                {
+                                    data: barScore, //y-axis
+                                    label: progName[0], //the upper chart filter
+                                    backgroundColor: barColor,
+                                  //  borderColor: "rgb(0,204,204)",
+                                    borderWidth: 2,
+                                    hoverBackgroundColor: "rgba(0,204,204,0.4)",
+                                    hoverBorderColor: "rgba(0,204,204,1)",
+                                    fill: false
+                                }
+                            ]
+                        }
+                    });
+                },
+                error: function () {
+                    alert("حدث خطأ في الرسمة البيانية للجنس")
+                }
+            });
+
+        }
+    }
+</script>
